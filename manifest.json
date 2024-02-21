@@ -7,6 +7,11 @@
         "48": "icons/icon-48x48.png",
         "96": "icons/icon-96x96.png"
     },
+    "browser_specific_settings": {
+        "gecko": {
+          "id": "bitmover@protonmail.ch"
+        }
+      },
     "action": {
         "default_icon": {
           "16": "icons/icon-16x16.png",
