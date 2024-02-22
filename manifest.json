@@ -1,8 +1,16 @@
 {
     "manifest_version": 3,
     "name": "bitcointalk data extension",
-    "version": "0.1",
+    "version": "0.2",
     "description": "A web browser extension that provides additional features to bitcointalk.org, such as price image, address balance, transaction details.",
+    "permissions": [
+        "activeTab",
+        "storage"
+      ],
+      "host_permissions": [
+        "*://bitcointalk.org/index.php?action=post*",
+        "*://www.altcoinstalks.com/index.php?action=post*"
+    ],
     "icons": {
         "48": "icons/icon-48x48.png",
         "96": "icons/icon-96x96.png"
