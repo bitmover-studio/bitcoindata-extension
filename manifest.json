@@ -23,7 +23,8 @@
     "content_scripts": [
         {
             "matches": [
-                "*://bitcointalk.org/index.php?action=post*"
+                "*://bitcointalk.org/index.php?action=post*",
+                "*://www.altcoinstalks.com/index.php?action=post*"
             ],
             "js": [
                 "/components/buttons.js"
