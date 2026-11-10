@@ -1,0 +1,149 @@
+/* ═══════════════════════════════════════════════
+   Extension-specific overrides on top of css/style.css
+   (style.css is a copy of the bitcoindata website stylesheet)
+════════════════════════════════════════════════ */
+
+/* The website turns <body> into a grid with a 250px sidebar column on wide screens.
+   The extension is always a single column (popup or browser sidebar). */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+body>header.ext-header {
+  grid-area: auto;
+  width: auto;
+  height: auto;
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+}
+
+main {
+  min-height: 0;
+  padding-top: 0;
+}
+
+/* Fixed size when opened as the toolbar popup (Chrome max is 800x600) */
+html.is-popup body {
+  width: 380px;
+  min-height: 580px;
+}
+
+/* ─── Header ───────────────────────────────────── */
+.ext-header {
+  background-color: var(--bs-tertiary-bg);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* ─── View tabs ────────────────────────────────── */
+.ext-tabs button {
+  background: transparent;
+  border: 0;
+}
+
+/* ─── Compact home cards ───────────────────────── */
+.ext-card {
+  padding: 14px 16px !important;
+  color: inherit;
+}
+
+.ext-card .card-home-icon-wrapper {
+  margin-bottom: 0;
+}
+
+.ext-card .card-title-home {
+  font-size: 1rem;
+  margin-bottom: 2px;
+}
+
+.ext-card .card-desc-home {
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.ext-card-arrow {
+  color: var(--theme-blue);
+  transition: transform 0.2s ease;
+}
+
+.ext-card:hover .ext-card-arrow {
+  transform: translateX(4px);
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+/* ─── Bootstrap compiled colors → theme colors ─── */
+.form-check-input:checked {
+  background-color: var(--theme-blue);
+  border-color: var(--theme-blue);
+}
+
+.form-check-input:focus,
+.form-control:focus {
+  border-color: var(--theme-blue);
+  box-shadow: 0 0 0 0.2rem var(--theme-blue-alpha);
+}
+
+/* ─── Submit button states (spinner / success) ─── */
+.ext-submit {
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.3s ease;
+}
+
+.ext-submit-label,
+.ext-submit-spinner,
+.ext-submit-success {
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.ext-submit-spinner,
+.ext-submit-success {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  opacity: 0;
+  transform: scale(0.5);
+  pointer-events: none;
+}
+
+.ext-submit.is-loading .ext-submit-label,
+.ext-submit.is-success .ext-submit-label {
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+.ext-submit.is-loading .ext-submit-spinner,
+.ext-submit.is-success .ext-submit-success {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.ext-submit.is-success {
+  background-color: var(--bs-success) !important;
+  border-color: var(--bs-success) !important;
+}
+
+/* ─── Balance results ──────────────────────────── */
+.balance-row {
+  transition: background-color 0.2s ease;
+}
+
+.balance-row:hover {
+  background-color: var(--bs-primary-bg-subtle);
+}
+
+.hide-zero .balance-row[data-zero="true"] {
+  display: none;
+}
+
+.balance-row .progress {
+  height: 4px;
+  background-color: rgba(127, 127, 127, 0.12);
+}

@@ -1,15 +1,23 @@
 {
     "manifest_version": 3,
-    "name": "bitcointalk data extension",
-    "version": "0.2",
-    "description": "A web browser extension that provides additional features to bitcointalk.org, such as price image, address balance, transaction details.",
+    "name": "bitcoindata",
+    "version": "0.3",
+    "description": "Bitcointalk & AltcoinsTalks extension: hover addresses/TXs for live data, insert BBCode price images, and monitor your BTC address.",
     "permissions": [
         "activeTab",
-        "storage"
-      ],
-      "host_permissions": [
-        "*://bitcointalk.org/index.php?action=post*",
-        "*://www.altcoinstalks.com/index.php?action=post*"
+        "storage",
+        "alarms",
+        "notifications",
+        "sidePanel",
+        "contextMenus"
+    ],
+    "host_permissions": [
+        "*://bitcointalk.org/*",
+        "*://*.altcoinstalks.com/*",
+        "https://bitcoindata.science/*",
+        "https://mempool.space/*",
+        "https://blockchain.info/*",
+        "https://api.blockcypher.com/*"
     ],
     "icons": {
         "48": "icons/icon-48x48.png",
@@ -17,16 +25,35 @@
     },
     "browser_specific_settings": {
         "gecko": {
-          "id": "bitmover@protonmail.ch"
+            "id": "bitmover@protonmail.ch"
         }
-      },
+    },
+    "background": {
+        "service_worker": "background.js",
+        "scripts": [
+            "components/balance-api.js",
+            "background.js"
+        ]
+    },
     "action": {
         "default_icon": {
-          "16": "icons/icon-16x16.png",
-          "32": "icons/icon-32x32.png"
+            "16": "icons/icon-16x16.png",
+            "32": "icons/icon-32x32.png"
         },
         "default_title": "bitcoindata API",
-        "default_popup": "main.html"
+        "default_popup": "main.html?popup"
+    },
+    "side_panel": {
+        "default_path": "main.html"
+    },
+    "sidebar_action": {
+        "default_title": "bitcoindata",
+        "default_panel": "main.html",
+        "default_icon": {
+            "16": "icons/icon-16x16.png",
+            "32": "icons/icon-32x32.png"
+        },
+        "open_at_install": false
     },
     "content_scripts": [
         {
@@ -36,6 +63,15 @@
             ],
             "js": [
                 "/components/buttons.js"
+            ]
+        },
+        {
+            "matches": [
+                "*://bitcointalk.org/*",
+                "*://*.altcoinstalks.com/*"
+            ],
+            "js": [
+                "/components/forum-hover.js"
             ]
         }
     ]

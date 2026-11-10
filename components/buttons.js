@@ -1,310 +1,168 @@
 'use strict';
 
-const newButtonsWrap = document.createElement("div");
-newButtonsWrap.style.margin = '0px 0px 5px 0px';
+// Bitcointalk / AltcoinsTalks post editor toolbar: one-click BBCode buttons for the
+// bitcoindata.science image API.
+// Runs as an extension content script (only on ?action=post pages) and inside the userscript
+// build (on every forum page), so it bails out when the page has no post editor.
+(() => {
+    const textArea = document.forms.postmodify?.message ?? document.querySelector('textarea[name="message"]');
+    // Skip pages without an editor, and don't add the toolbar twice when both the
+    // extension and the userscript are installed.
+    if (!textArea || document.getElementById('bitcoindata-buttons')) return;
 
-const textArea = document.querySelector("textarea");
-const parentElement = textArea.parentNode;
-parentElement.insertBefore(newButtonsWrap, textArea);
+    const newButtonsWrap = document.createElement("div");
+    newButtonsWrap.id = 'bitcoindata-buttons';
+    newButtonsWrap.style.margin = '0px 0px 5px 0px';
 
-const bitcoinAPI = [
-    {
-        name: '\u20BF Price',
-        description: 'Bitcoin Price',
-        url: '[url=https://bitcoindata.science/bitcointalk-api.html#local-price][img height=16]https://bitcoindata.science/api/localprice.php?coin=bitcoin&amount=1'
-    },
-    {
-        name: 'Fiat Price',
-        description: 'Fiat currency price in bitcoin',
-        url: '[url=https://bitcoindata.science/bitcointalk-api.html#fiattobtc][img height=16]https://bitcoindata.science/api/fiattobtc.php?fiatamount=10'
-    },
-    {
-        name: 'Address Balance',
-        description: 'Balance of any bitcoin address',
-        url: '[url=https://bitcoindata.science/bitcointalk-api.html#address-balance][img height=16]https://bitcoindata.science/api/addressbalance.php?address=***YOUR_ADDRESS***'
-    },
-    {
-        name: 'Transaction',
-        description: 'Details of a bitcoin transaction',
-        url: '[url=https://bitcoindata.science/bitcointalk-api.html#transaction][img]https://bitcoindata.science/api/transaction.php?id=***TRANSACTION_ID***'
-    },
-    {
-        name: 'Fees',
-        description: 'Recommended Fees',
-        url: '[url=https://bitcoindata.science/bitcointalk-api.html#bitcoin-fees][img height=100]https://bitcoindata.science/api/bitcoinfees.php?'
-    },
-];
+    const parentElement = textArea.parentNode;
+    parentElement.insertBefore(newButtonsWrap, textArea);
+
+    const bitcoinAPI = [
+        {
+            name: '\u20BF Price',
+            description: 'Bitcoin Price',
+            url: '[url=https://bitcoindata.science/bitcointalk-api.html#local-price][img height=16]https://bitcoindata.science/api/localprice.php?coin=bitcoin&amount=1'
+        },
+        {
+            name: 'Fiat Price',
+            description: 'Fiat currency price in bitcoin',
+            url: '[url=https://bitcoindata.science/bitcointalk-api.html#fiattobtc][img height=16]https://bitcoindata.science/api/fiattobtc.php?fiatamount=10'
+        },
+        {
+            name: 'Address Balance',
+            description: 'Balance of any bitcoin address',
+            url: '[url=https://bitcoindata.science/bitcointalk-api.html#address-balance][img height=16]https://bitcoindata.science/api/addressbalance.php?address={your_address}'
+        },
+        {
+            name: 'Transaction',
+            description: 'Details of a bitcoin transaction',
+            url: '[url=https://bitcoindata.science/bitcointalk-api.html#transaction][img]https://bitcoindata.science/api/transaction.php?id={transaction_id}'
+        },
+        {
+            name: 'Fees',
+            description: 'Recommended Fees',
+            url: '[url=https://bitcoindata.science/bitcointalk-api.html#bitcoin-fees][img height=100]https://bitcoindata.science/api/bitcoinfees.php?'
+        },
+    ];
 
 
-// imported bitcointalk functions
-// Remember the current position.
-function storeCaret(text) {
-    // Only bother if it will be useful.
-    if (typeof (text.createTextRange) != "undefined")
-        text.caretPos = document.selection.createRange().duplicate();
-}
-
-// Replaces the currently selected text with the passed text.
-function replaceText(text, textarea) {
-    // Attempt to create a text range (IE).
-    if (typeof (textarea.caretPos) != "undefined" && textarea.createTextRange) {
-        var caretPos = textarea.caretPos;
-
-        caretPos.text = caretPos.text.charAt(caretPos.text.length - 1) == ' ' ? text + ' ' : text;
-        caretPos.select();
+    // imported bitcointalk functions
+    // Remember the current position.
+    function storeCaret(text) {
+        if (typeof (text.createTextRange) != "undefined")
+            text.caretPos = document.selection.createRange().duplicate();
     }
-    // Mozilla text range replace.
-    else if (typeof (textarea.selectionStart) != "undefined") {
-        var begin = textarea.value.substr(0, textarea.selectionStart);
-        var end = textarea.value.substr(textarea.selectionEnd);
-        var scrollPos = textarea.scrollTop;
 
-        textarea.value = begin + text + end;
+    // Replaces the currently selected text with the passed text.
+    function replaceText(text, textarea) {
+        // Attempt to create a text range (IE).
+        if (typeof (textarea.caretPos) != "undefined" && textarea.createTextRange) {
+            var caretPos = textarea.caretPos;
 
-        if (textarea.setSelectionRange) {
-            textarea.focus();
-            textarea.setSelectionRange(begin.length + text.length, begin.length + text.length);
+            caretPos.text = caretPos.text.charAt(caretPos.text.length - 1) == ' ' ? text + ' ' : text;
+            caretPos.select();
         }
-        textarea.scrollTop = scrollPos;
+        // Mozilla text range replace.
+        else if (typeof (textarea.selectionStart) != "undefined") {
+            var begin = textarea.value.substr(0, textarea.selectionStart);
+            var end = textarea.value.substr(textarea.selectionEnd);
+            var scrollPos = textarea.scrollTop;
+
+            textarea.value = begin + text + end;
+
+            if (textarea.setSelectionRange) {
+                textarea.focus();
+                textarea.setSelectionRange(begin.length + text.length, begin.length + text.length);
+            }
+            textarea.scrollTop = scrollPos;
+        }
+        // Just put it on the end.
+        else {
+            textarea.value += text;
+            textarea.focus(textarea.value.length - 1);
+        }
     }
-    // Just put it on the end.
-    else {
-        textarea.value += text;
-        textarea.focus(textarea.value.length - 1);
+
+    function addImage(imgURL) {
+        replaceText(imgURL + '&currency=' + selectElement.value + '&hex=' + colorInput.value.substring(1) + (boldCheckbox.checked === true ? '&bold' : '') + '[/img][/url]', textArea);
     }
-}
 
-function addImage(imgURL) {
-    replaceText(imgURL + '&currency='+ selectElement.value +'&hex='+ colorInput.value.substring(1) + (boldCheckbox.checked === true ? '&bold' : '' ) + '[/img][/url]', document.forms.postmodify.message);
-}
+    bitcoinAPI.forEach(i => {
+        const button = document.createElement('input');
+        button.type = 'button';
+        button.style.margin = '1px 2px 1px 1px';
+        button.name = i.name;
+        button.alt = i.name;
+        button.title = i.description;
+        button.value = i.name;
+        button.tabIndex = 4;
+        button.onclick = () => addImage(i.url);
+        newButtonsWrap.appendChild(button);
+    });
 
-bitcoinAPI.forEach(i => {
-    const button = document.createElement('input');
-    button.type = 'button';
-    button.style.margin = '1px 2px 1px 1px';
-    button.name = i.name;
-    button.alt = i.name;
-    button.title = i.description;
-    button.value = i.name;
-    button.tabIndex = 4;
-    button.onclick = () => addImage(i.url);
-    newButtonsWrap.appendChild(button);
-});
+    // customization area
+    const verticalLine = document.createElement('span');
+    verticalLine.style.borderRight = '1px solid #888';
+    verticalLine.style.margin = '0px 3px';
+    newButtonsWrap.appendChild(verticalLine);
 
-// customization area
-const verticalLine = document.createElement('span');
-verticalLine.style.borderRight = '1px solid #888';
-verticalLine.style.margin = '0px 3px';
-newButtonsWrap.appendChild(verticalLine);
+    // bold
+    const label = document.createElement('label');
+    label.htmlFor = 'bold';
+    label.style.margin = '1px 2px 1px 1px';
+    label.innerHTML = '<small>Bold:</small>';
+    newButtonsWrap.appendChild(label);
+    const boldCheckbox = document.createElement('input');
+    boldCheckbox.type = 'checkbox';
+    boldCheckbox.value = '';
+    boldCheckbox.style.margin = '1px 5px 1px 1px';
+    boldCheckbox.id = 'bold';
+    newButtonsWrap.appendChild(boldCheckbox);
 
-// bold
-const label = document.createElement('label');
-label.htmlFor = 'bold';
-label.style.margin = '1px 2px 1px 1px';
-label.innerHTML = '<small>Bold:</small>';
-newButtonsWrap.appendChild(label);
-const boldCheckbox = document.createElement('input');
-boldCheckbox.type = 'checkbox';
-boldCheckbox.value = '';
-boldCheckbox.style.margin = '1px 5px 1px 1px';
-boldCheckbox.id = 'bold';
-newButtonsWrap.appendChild(boldCheckbox);
+    const currencyCodes = [
+        "AED", "AFN", "ALL", "AMD", "ANG", "AOA", "ARS", "AUD", "AWG", "AZN",
+        "BAM", "BBD", "BDT", "BGN", "BHD", "BIF", "BMD", "BND", "BOB", "BRL",
+        "BSD", "BTC", "BTN", "BWP", "BYN", "BYR", "BZD", "CAD", "CDF", "CHF",
+        "CLF", "CLP", "CNY", "COP", "CRC", "CUC", "CUP", "CVE", "CZK", "DJF",
+        "DKK", "DOP", "DZD", "EGP", "ERN", "ETB", "EUR", "FJD", "FKP", "GBP",
+        "GEL", "GGP", "GHS", "GIP", "GMD", "GNF", "GTQ", "GYD", "HKD", "HNL",
+        "HRK", "HTG", "HUF", "IDR", "ILS", "IMP", "INR", "IQD", "IRR", "ISK",
+        "JEP", "JMD", "JOD", "JPY", "KES", "KGS", "KHR", "KMF", "KPW", "KRW",
+        "KWD", "KYD", "KZT", "LAK", "LBP", "LKR", "LRD", "LSL", "LTL", "LVL",
+        "LYD", "MAD", "MDL", "MGA", "MKD", "MMK", "MNT", "MOP", "MRU", "MUR",
+        "MVR", "MWK", "MXN", "MYR", "MZN", "NAD", "NGN", "NIO", "NOK", "NPR",
+        "NZD", "OMR", "PAB", "PEN", "PGK", "PHP", "PKR", "PLN", "PYG", "QAR",
+        "RON", "RSD", "RUB", "RWF", "SAR", "SBD", "SCR", "SDG", "SEK", "SGD",
+        "SHP", "SLE", "SLL", "SOS", "SRD", "STD", "SVC", "SYP", "SZL", "THB",
+        "TJS", "TMT", "TND", "TOP", "TRY", "TTD", "TWD", "TZS", "UAH", "UGX",
+        "USD", "UYU", "UZS", "VEF", "VES", "VND", "VUV", "WST", "XAF", "XAG",
+        "XAU", "XCD", "XDR", "XOF", "XPF", "YER", "ZAR", "ZMK", "ZMW", "ZWL"
+    ];
 
-const currencyCodes = ["AED",
-    "AFN",
-    "ALL",
-    "AMD",
-    "ANG",
-    "AOA",
-    "ARS",
-    "AUD",
-    "AWG",
-    "AZN",
-    "BAM",
-    "BBD",
-    "BDT",
-    "BGN",
-    "BHD",
-    "BIF",
-    "BMD",
-    "BND",
-    "BOB",
-    "BRL",
-    "BSD",
-    "BTC",
-    "BTN",
-    "BWP",
-    "BYN",
-    "BYR",
-    "BZD",
-    "CAD",
-    "CDF",
-    "CHF",
-    "CLF",
-    "CLP",
-    "CNY",
-    "COP",
-    "CRC",
-    "CUC",
-    "CUP",
-    "CVE",
-    "CZK",
-    "DJF",
-    "DKK",
-    "DOP",
-    "DZD",
-    "EGP",
-    "ERN",
-    "ETB",
-    "EUR",
-    "FJD",
-    "FKP",
-    "GBP",
-    "GEL",
-    "GGP",
-    "GHS",
-    "GIP",
-    "GMD",
-    "GNF",
-    "GTQ",
-    "GYD",
-    "HKD",
-    "HNL",
-    "HRK",
-    "HTG",
-    "HUF",
-    "IDR",
-    "ILS",
-    "IMP",
-    "INR",
-    "IQD",
-    "IRR",
-    "ISK",
-    "JEP",
-    "JMD",
-    "JOD",
-    "JPY",
-    "KES",
-    "KGS",
-    "KHR",
-    "KMF",
-    "KPW",
-    "KRW",
-    "KWD",
-    "KYD",
-    "KZT",
-    "LAK",
-    "LBP",
-    "LKR",
-    "LRD",
-    "LSL",
-    "LTL",
-    "LVL",
-    "LYD",
-    "MAD",
-    "MDL",
-    "MGA",
-    "MKD",
-    "MMK",
-    "MNT",
-    "MOP",
-    "MRU",
-    "MUR",
-    "MVR",
-    "MWK",
-    "MXN",
-    "MYR",
-    "MZN",
-    "NAD",
-    "NGN",
-    "NIO",
-    "NOK",
-    "NPR",
-    "NZD",
-    "OMR",
-    "PAB",
-    "PEN",
-    "PGK",
-    "PHP",
-    "PKR",
-    "PLN",
-    "PYG",
-    "QAR",
-    "RON",
-    "RSD",
-    "RUB",
-    "RWF",
-    "SAR",
-    "SBD",
-    "SCR",
-    "SDG",
-    "SEK",
-    "SGD",
-    "SHP",
-    "SLE",
-    "SLL",
-    "SOS",
-    "SRD",
-    "STD",
-    "SVC",
-    "SYP",
-    "SZL",
-    "THB",
-    "TJS",
-    "TMT",
-    "TND",
-    "TOP",
-    "TRY",
-    "TTD",
-    "TWD",
-    "TZS",
-    "UAH",
-    "UGX",
-    "USD",
-    "UYU",
-    "UZS",
-    "VEF",
-    "VES",
-    "VND",
-    "VUV",
-    "WST",
-    "XAF",
-    "XAG",
-    "XAU",
-    "XCD",
-    "XDR",
-    "XOF",
-    "XPF",
-    "YER",
-    "ZAR",
-    "ZMK",
-    "ZMW",
-    "ZWL"
-];
+    const currencyText = document.createElement('small');
+    currencyText.innerText = 'Fiat:'
+    currencyText.style.margin = '1px 2px 1px 1px';
+    newButtonsWrap.appendChild(currencyText);
+    const selectElement = document.createElement('select');
+    selectElement.id = 'selectCurrency';
+    selectElement.onchange = '';
 
-const currencyText = document.createElement('small');
-currencyText.innerText = 'Fiat:'
-currencyText.style.margin = '1px 2px 1px 1px';
-newButtonsWrap.appendChild(currencyText);
-const selectElement = document.createElement('select');
-selectElement.id = 'selectCurrency';
-selectElement.onchange = '';
+    currencyCodes.forEach(code => {
+        const option = document.createElement("option");
+        option.value = code;
+        (code === 'USD') ? option.selected = true : '';
+        option.textContent = code;
+        selectElement.appendChild(option);
+    });
+    newButtonsWrap.appendChild(selectElement);
 
-currencyCodes.forEach(code => {
-    const option = document.createElement("option");
-    option.value = code;
-    (code === 'USD') ? option.selected = true : '';
-    option.textContent = code;
-    selectElement.appendChild(option);
-});
-newButtonsWrap.appendChild(selectElement);
-
-const hexText = document.createElement('small');
-hexText.innerText = ' Color:'
-hexText.style.margin = '1px 4px 1px 1px';
-newButtonsWrap.appendChild(hexText);
-const colorInput = document.createElement("input");
-colorInput.setAttribute("type", "color");
-colorInput.id = 'hexSelector';
-colorInput.style = 'width: 30px; height:20px; padding: 1px; margin:1px 2px 1px 1px;position: absolute;';
-newButtonsWrap.appendChild(colorInput);
+    const hexText = document.createElement('small');
+    hexText.innerText = ' Color:'
+    hexText.style.margin = '1px 4px 1px 1px';
+    newButtonsWrap.appendChild(hexText);
+    const colorInput = document.createElement("input");
+    colorInput.setAttribute("type", "color");
+    colorInput.id = 'hexSelector';
+    colorInput.style = 'width: 30px; height:20px; padding: 1px; margin:1px 2px 1px 1px;position: absolute;';
+    newButtonsWrap.appendChild(colorInput);
+})();
