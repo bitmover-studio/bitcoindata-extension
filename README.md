@@ -54,7 +54,7 @@ Highlight any Bitcoin address or right-click an address link on **any website**:
 ### Official Store Releases
 - **Mozilla Firefox & Tor Browser:** [Firefox Add-ons (AMO)](https://addons.mozilla.org/en-US/firefox/addon/bitcointalk-data-extension/)
 - **Microsoft Edge / Chromium:** [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/bitcointalk-data-extensio/gcndngnnhncdblgfcbgefmhginmmjfde)
-- **Userscript (post toolbar only):** [Greasy Fork](https://greasyfork.org/en/scripts/488031-bitcoindata-extension)
+- **Userscript (Chrome, Brave, Tampermonkey / Violentmonkey):** [Greasy Fork](https://greasyfork.org/en/scripts/488031-bitcoindata-extension) — includes live forum hover cards and the post editor BBCode toolbar.
 
 ### Load Unpacked (Developer Mode)
 1. Clone or download this repository:
@@ -91,13 +91,41 @@ bitcoindata-extension/
 │   └── bootstrap.min.css      # Bundled Bootstrap 5.3 CSS
 ├── userscript/
 │   ├── build-userscript.js    # Bundles forum scripts into a single userscript
+│   ├── build-packages.js      # Builds store-ready Firefox AMO & Edge Add-ons ZIPs
 │   └── bitcoindata.user.js    # Standalone Greasy Fork / Tampermonkey userscript
+├── dist/                      # Generated store-ready .zip archives
+│   ├── bitcoindata-firefox-v0.3.zip
+│   └── bitcoindata-edge-v0.3.zip
 └── icons/                     # Extension icons & SVG brand assets
 ```
 
-### Building the Userscript
+---
 
-Whenever you modify `components/balance-api.js`, `components/buttons.js`, or `components/forum-hover.js`, regenerate `userscript/bitcoindata.user.js` for Greasy Fork with:
+## Building Store Packages & Userscript
+
+### 1. Building Store ZIP Packages (Firefox AMO & Microsoft Edge)
+
+To generate clean, validator-ready `.zip` archives for **Firefox Add-ons (AMO)** and **Microsoft Edge Add-ons**, run:
+
+```bash
+node userscript/build-packages.js
+```
+
+This creates two archives inside `dist/`:
+- `dist/bitcoindata-firefox-v0.3.zip` — Tailored `manifest.json` for Mozilla Firefox (`background.scripts`, `sidebar_action`, and `browser_specific_settings.gecko`, with Chromium-only `sidePanel` / `service_worker` keys stripped so AMO produces zero manifest warnings).
+- `dist/bitcoindata-edge-v0.3.zip` — Tailored `manifest.json` for Microsoft Edge / Chromium (`background.service_worker` and `side_panel`, with Firefox-only `sidebar_action` / `browser_specific_settings` / `background.scripts` keys stripped so Edge Partner Center produces zero manifest warnings).
+
+**Why use `build-packages.js` instead of Windows `Compress-Archive`?**
+- Places `manifest.json` directly at the root of the `.zip` archive (not nested inside a subfolder).
+- Writes standard POSIX forward slashes (`/`) for all archive entry paths (`components/main.js`, `css/style.css`, etc.) — avoiding Windows backslash (`\`) ZIP headers that Firefox AMO's validator rejects.
+- Includes only the 18 runtime files and automatically excludes `.git/`, `userscript/`, and `dist/`.
+- Because all extension scripts are plain, unminified JavaScript without a bundler/transpiler step, select **"No"** when Firefox AMO asks whether separate source code needs to be submitted.
+
+### 2. Building the Greasy Fork Userscript
+
+The forum modules (`components/balance-api.js`, `components/buttons.js`, and `components/forum-hover.js`) are written to work in both WebExtension mode and standalone userscript mode (using `GM_xmlhttpRequest` / `GM.xmlHttpRequest` for cross-origin API requests and an in-memory cache when `background.js` is not present).
+
+Whenever you modify any file in `components/`, regenerate `userscript/bitcoindata.user.js` for [Greasy Fork](https://greasyfork.org/en/scripts/488031-bitcoindata-extension) with:
 
 ```bash
 node userscript/build-userscript.js

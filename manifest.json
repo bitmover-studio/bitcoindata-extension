@@ -62,7 +62,7 @@
                 "*://www.altcoinstalks.com/index.php?action=post*"
             ],
             "js": [
-                "/components/buttons.js"
+                "components/buttons.js"
             ]
         },
         {
@@ -71,7 +71,7 @@
                 "*://*.altcoinstalks.com/*"
             ],
             "js": [
-                "/components/forum-hover.js"
+                "components/forum-hover.js"
             ]
         }
     ]
